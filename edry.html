@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <title>لوحة طلبات الاشتراكات</title>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+    <style>
+        body { background: #111; color: #0f0; font-family: 'Courier New', monospace; padding: 20px; text-align: center; }
+        .container { max-width: 800px; margin: auto; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; background: #222; }
+        th, td { border: 1px solid #0f0; padding: 12px; text-align: center; }
+        th { background: #004400; color: #fff; }
+        .btn-active { background: #0f0; color: #000; font-weight: bold; border: none; padding: 8px 15px; cursor: pointer; border-radius: 5px; }
+        .card { background: #1a1a1a; border: 1px solid #0f0; padding: 15px; margin-bottom: 20px; border-radius: 10px; }
+        input { background: #000; border: 1px solid #0f0; color: #0f0; padding: 10px; width: 70%; margin: 5px; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>📥 طلبات الاشتراك الواردة</h2>
+    <table id="requestsTable">
+        <thead>
+            <tr>
+                <th>ID المستخدم</th>
+                <th>الجيميل</th>
+                <th>الحالة</th>
+                <th>الإجراء</th>
+            </tr>
+        </thead>
+        <tbody id="tableBody">
+            </tbody>
+    </table>
+
+    <hr style="margin: 40px 0; border: 0.5px solid #333;">
+
+    <div class="card">
+        <h3>📤 إرسال ميديا (صورة/فيديو)</h3>
+        <input type="text" id="mid" placeholder="ID المشترك">
+        <input type="text" id="murl" placeholder="رابط الصورة أو الفيديو">
+        <select id="mtype" style="padding: 10px; background: #000; color: #0f0; border: 1px solid #0f0;">
+            <option value="image">صورة</option>
+            <option value="video">فيديو</option>
+        </select>
+        <button class="btn-active" style="display:block; width:100%; margin-top:10px;" onclick="sendMedia()">إرسال للمشترك</button>
+    </div>
+</div>
+
+<script>
+    const firebaseConfig = {
+        apiKey: "AIzaSyDI1E22w698Gl8pKQP0tomfzWjsSP03wdk",
+        databaseURL: "https://testing-a8c1c-default-rtdb.firebaseio.com",
+        projectId: "testing-a8c1c",
+        storageBucket: "testing-a8c1c.appspot.com"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
+    // جلب الطلبات وعرضها في الجدول
+    db.ref('users').on('value', (snapshot) => {
+        const tableBody = document.getElementById('tableBody');
+        tableBody.innerHTML = "";
+        snapshot.forEach((childSnapshot) => {
+            const userId = childSnapshot.key;
+            const userData = childSnapshot.val();
+            
+            let statusText = userData.status === 'active' ? "<span style='color:cyan;'>مفعل</span>" : "<span style='color:yellow;'>قيد الانتظار</span>";
+            
+            tableBody.innerHTML += `
+                <tr>
+                    <td>${userId}</td>
+                    <td>${userData.email}</td>
+                    <td>${statusText}</td>
+                    <td>
+                        <button class="btn-active" onclick="setStatus('${userId}', 'active')">تفعيل ✅</button>
+                        <button class="btn-active" style="background:red; color:white;" onclick="setStatus('${userId}', 'pending')">إلغاء ❌</button>
+                    </td>
+                </tr>
+            `;
+        });
+    });
+
+    function setStatus(id, s) {
+        db.ref('users/' + id + '/status').set(s);
+        alert("تم تحديث حالة المستخدم: " + id);
+    }
+
+    function sendMedia() {
+        const id = document.getElementById('mid').value;
+        const url = document.getElementById('murl').value;
+        const type = document.getElementById('mtype').value;
+        if(!id || !url) return alert("أكمل البيانات");
+        db.ref('media/' + id).push({ type: type, url: url });
+        alert("📤 تم إرسال الميديا بنجاح!");
+    }
+</script>
+</body>
+</html>
